@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        window.addEventListener("DOMContentLoaded", function() {
+            const el = document.querySelector("a"); // a 태그 선택
+            el.addEventListener("click", function(e) {
+                e.preventDefault(); // 기본 동작(이벤트) 차단
+                console.log("기본동작이 차단되었나요?");
+                console.log("this", this);
+            });
+        });
+    </script>
+    <a href="https://www.naver.com" target="_blank">네이버</a>
+</body>
+</html>

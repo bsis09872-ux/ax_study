@@ -2,6 +2,8 @@
 
 import { ActionState } from '@/shared/types/action.types';
 import { validateSignUpInput } from '../utils/authValidation';
+import { createServerClient } from '@/shared/lib/supabase';
+import { revalidatePath } from 'next/cache';
 
 export async function signUpAction(
     prevState: ActionState,
@@ -28,9 +30,47 @@ export async function signUpAction(
         };
     }
 
+    // 가입 처리
+    const supabase = createServerClient();
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password.trim(),
+    });
+
+    if (signUpError || !authData.user) {
+        const isDuplicate =
+            signUpError?.message
+                ?.toLowerCase()
+                .includes('already registered') ||
+            signUpError?.message?.toLowerCase().includes('already exists');
+
+        return {
+            success: false,
+            message: isDuplicate
+                ? '이미 가입된 이메일 주소입니다. 다른 이메일을 사용해 주세요.'
+                : `회원가입에 실패했습니다: ${signUpError?.message || '알 수 없는 오류'}`,
+        };
+    }
+
+    // profiles 테이블 추가 처리
+    const userId = authData.user.id;
+    const { error: profileError } = await supabase.from('profiles').insert({
+        id: userId,
+        name: name.trim(),
+    });
+
+    if (profileError) {
+        return {
+            success: false,
+            message: `회원 프로필 생성에 실패했습니다: ${profileError.message}`,
+        };
+    }
+
+    revalidatePath('/', 'layout');
+
     return {
         success: true,
         message: '회원가입이 완료되었습니다.',
-        data: {},
+        data: { userId },
     };
 }

@@ -1,8 +1,10 @@
 import logging
 from typing import Dict, Annotated, Optional
 from datetime import date
-from fastapi import FastAPI, Path, Query, HTTPException, status, Request
 from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Path, Query, HTTPException, status, Request
+from order.presentation.routers.v1.router import router as order_router
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("app")
@@ -32,8 +34,9 @@ grocery_database: Dict[int, dict] = {
 
 class GroceryExpiredException(Exception):
     def __init__(self, name: str, expiration_date: date):
-        self.name=name
-        self.expiration_date=date
+        self.name = name
+        self.expiration_date = date
+
 
 @app.exception_handler(GroceryExpiredException)
 async def handle_exception(request: Request, exc: GroceryExpiredException):
@@ -49,20 +52,19 @@ async def handle_exception(request: Request, exc: GroceryExpiredException):
 
 @app.get("/groceries/{item_id}")
 async def get_grocery(
-    item_id: int = Annotated[int, Path(..., description="상품 ID")],
+    item_id: Annotated[int, Path(..., description="상품")],
     keyword: Annotated[Optional[str], Query(description="키워드")] = None
 ):
     if item_id not in grocery_database:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="식료품을 찾을 수 없습니다."
-    )
+        )
+
     logger.info(f"keyword={keyword}")
 
     item = grocery_database[item_id]
     if item["expiration_date"] < date.today():
-        raise GroceryExpiredException(item["name"], item["expiration_date"])
-    
-    return item 
+        raise GroceryExpiredException(item['name'], item['expiration_date'])
 
-# 그 외 없는 상품에 대한 접근을 404 - 불러올 수 없다는 메시지 등록하기
+    return item 
